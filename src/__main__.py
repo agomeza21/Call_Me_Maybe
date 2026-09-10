@@ -1,4 +1,6 @@
 import argparse
+import json
+import sys
 
 parser = argparse.ArgumentParser()
 
@@ -11,6 +13,20 @@ parser.add_argument("--output",
 
 args = parser.parse_args()
 
-print(args.functions_definition)
-print(args.input)
-print(args.output)
+
+def load_json_file(path: str) -> list[dict]:
+    with open(path) as f:
+        data = json.load(f)
+    return data
+
+
+try:
+    functions = load_json_file(args.functions_definition)
+    tests = load_json_file(args.input)
+except (FileNotFoundError, ValueError) as e:
+    print(e)
+    sys.exit(1)
+
+print(functions)
+print()
+print(tests)
