@@ -20,6 +20,12 @@ def generate_function_calls(functions: list[dict], tests: list[dict],
 
         int_list: list = ids[0].tolist()
 
+        fixed_start = '{"name": "'
+        fixed_ids = model.encode(fixed_start)
+        fixed_list = fixed_ids[0].tolist()
+        int_list = int_list + fixed_list
+
+        name_text = ""
         for _ in range(50):
             logits = model.get_logits_from_input_ids(int_list)
             id_token = numpy.argmax(logits)

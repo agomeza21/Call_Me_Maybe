@@ -3,6 +3,7 @@ import sys
 from llm_sdk import Small_LLM_Model
 from call_me_maybe.file_utils import load_json_file
 from call_me_maybe.generation import generate_function_calls
+from call_me_maybe.constrained_decoding import load_vocab
 
 parser = argparse.ArgumentParser()
 
@@ -16,6 +17,9 @@ parser.add_argument("--output",
 args = parser.parse_args()
 
 model = Small_LLM_Model()
+
+vocab_path = model.get_path_to_vocab_file()
+vocab = load_vocab(vocab_path)
 
 try:
     functions = load_json_file(args.functions_definition)
