@@ -1,9 +1,11 @@
 import argparse
 import sys
+import pydantic
 from llm_sdk import Small_LLM_Model
 from call_me_maybe.file_utils import load_json_file
 from call_me_maybe.generation import generate_function_calls
 from call_me_maybe.constrained_decoding import load_vocab
+from call_me_maybe.models import parse_functions, parse_tests
 
 parser = argparse.ArgumentParser()
 
@@ -23,8 +25,10 @@ vocab = load_vocab(vocab_path)
 
 try:
     functions = load_json_file(args.functions_definition)
+    functions_parsed = parse_functions(functions)
     tests = load_json_file(args.input)
-except (FileNotFoundError, ValueError) as e:
+    tests_parsed = parse_tests(tests)
+except (FileNotFoundError, ValueError, pydantic.ValidationError) as e:
     print(e)
     sys.exit(1)
 
