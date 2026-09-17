@@ -15,8 +15,9 @@ def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
     return result
 
 
-def generate_function_calls(functions: list[dict], tests: list[TestPrompt],
-                            model: Small_LLM_Model) -> list[dict]:
+def generate_function_calls(functions: list[FunctionDefinition],
+                            tests: list[TestPrompt], model:
+                            Small_LLM_Model) -> list[dict]:
     results = []
     for test in tests:
         prompt = build_prompt(functions, test.prompt)
