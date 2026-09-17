@@ -32,5 +32,5 @@ except (FileNotFoundError, ValueError, pydantic.ValidationError) as e:
     print(e)
     sys.exit(1)
 
-result = generate_function_calls(functions, tests, model)
+result = generate_function_calls(functions_parsed, tests_parsed, model)
 print(result)
