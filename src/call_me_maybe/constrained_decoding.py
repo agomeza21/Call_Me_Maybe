@@ -52,3 +52,31 @@ def count_matching_prefixes(text: str, valid_names: list[str]) -> int:
         if name.startswith(text):
             counter += 1
     return counter
+
+
+def is_valid_number_char(candidate: str, allow_decimal: bool) -> bool:
+    if allow_decimal:
+        valid_chars = {
+            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "-"}
+    else:
+        valid_chars = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-"}
+    for char in candidate:
+        if char not in valid_chars:
+            return False
+    return True
+
+
+def mask_logits_number(logits: list[float], id_to_token: dict,
+                       generated_text: str,
+                       allow_decimal: bool) -> list[float]:
+    modified_logits = []
+    for id_token, logit in enumerate(logits):
+        if id_token not in id_to_token:
+            modified_logits.append(float("-inf"))
+            continue
+        candidate = generated_text + id_to_token[id_token]
+        if is_valid_number_char(candidate, allow_decimal):
+            modified_logits.append(logit)
+        else:
+            modified_logits.append(float("-inf"))
+    return modified_logits
