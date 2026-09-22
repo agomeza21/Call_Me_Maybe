@@ -3,8 +3,13 @@ from .models import FunctionDefinition
 
 
 def load_vocab(vocab_path: str) -> dict:
-    with open(vocab_path) as f:
-        vocab = json.load(f)
+    try:
+        with open(vocab_path) as f:
+            vocab = json.load(f)
+    except FileNotFoundError as e:
+        raise ValueError(f"File not found: {vocab_path}") from e
+    except json.JSONDecodeError as e:
+        raise ValueError(f"In file {vocab_path}: {e}") from e
     return vocab
 
 

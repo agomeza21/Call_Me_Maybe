@@ -15,7 +15,10 @@ def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
         functions_dict.append(f.model_dump())
     functions_text = json.dumps(functions_dict, indent=2)
     instructions = ("Given the following functions, respond with the name of "
-                    "the function to call and its parameters, in JSON format")
+                    "the function to call and its parameters, in JSON format."
+                    "Choose the function whose description best matches the "
+                    "user's overall intent, not just individual words in the "
+                    "prompt")
     result = f"{instructions}\n\n{functions_text}\n\n{prompt}"
     return result
 
