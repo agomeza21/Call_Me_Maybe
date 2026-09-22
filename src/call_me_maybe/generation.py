@@ -3,9 +3,10 @@ import json
 from llm_sdk import Small_LLM_Model
 from .models import TestPrompt, FunctionDefinition
 from .constrained_decoding import (invert_vocab,
-                                   get_valid_function_names, mask_logits,
+                                   get_valid_function_names, mask_logits_names,
                                    count_matching_prefixes,
-                                   mask_logits_number, is_valid_number_char)
+                                   mask_logits_number, is_valid_number_char,
+                                   is_valid_string, mask_logits_string)
 
 
 def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
@@ -43,8 +44,8 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                 int_list.extend(forced_params_ids)
                 break
             logits = model.get_logits_from_input_ids(int_list)
-            masked_logits = mask_logits(logits, id_to_token,
-                                        generated_text, valid_names)
+            masked_logits = mask_logits_names(logits, id_to_token,
+                                              generated_text, valid_names)
             id_token = numpy.argmax(masked_logits)
             int_list.append(int(id_token))
         selected_function = None
@@ -61,27 +62,66 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
             forced_param_name_ids = (model.
                                      encode(f'"{param_name}": ')[0].tolist())
             int_list.extend(forced_param_name_ids)
-            value_text = ""
-            value_start = len(int_list)
-            allow_decimal = param_type.type == "number"
-            for _ in range(10):
-                logits = model.get_logits_from_input_ids(int_list)
-                id_token_raw = numpy.argmax(logits)
-                raw_token = id_to_token[int(id_token_raw)]
-                raw_candidate = value_text + raw_token
-                if is_valid_number_char(raw_candidate, allow_decimal):
-                    masked_logits = mask_logits_number(logits, id_to_token,
-                                                       value_text,
-                                                       allow_decimal)
+            if param_type.type == "string":
+                forced_quotes_ids = model.encode('"')[0].tolist()
+                int_list.extend(forced_quotes_ids)
+                value_text = ""
+                value_start = len(int_list)
+                for _ in range(20):
+                    logits = model.get_logits_from_input_ids(int_list)
+                    id_token_raw = numpy.argmax(logits)
+                    raw_token = id_to_token[int(id_token_raw)]
+                    raw_candidate = value_text + raw_token
+                    if is_valid_string(raw_candidate):
+                        masked_logits = mask_logits_string(logits, id_to_token,
+                                                           value_text)
+                        id_token = numpy.argmax(masked_logits)
+                        int_list.append(int(id_token))
+                        value_text = model.decode(int_list[value_start:])
+                    else:
+                        break
+                forced_quotes_ids = model.encode('"')[0].tolist()
+                int_list.extend(forced_quotes_ids)
+                parameters_dict[param_name] = value_text
+            elif param_type.type == "boolean":
+                boolean_values = ["true", "false"]
+                value_text = ""
+                value_start = len(int_list)
+                for _ in range(20):
+                    value_text = model.decode(int_list[value_start:])
+                    if (value_text in boolean_values and
+                            count_matching_prefixes(value_text,
+                                                    boolean_values) == 1):
+                        break
+                    logits = model.get_logits_from_input_ids(int_list)
+                    masked_logits = mask_logits_names(logits, id_to_token,
+                                                      value_text,
+                                                      boolean_values)
                     id_token = numpy.argmax(masked_logits)
                     int_list.append(int(id_token))
-                    value_text = model.decode(int_list[value_start:])
-                else:
-                    break
-            if allow_decimal:
-                parameters_dict[param_name] = float(value_text)
+                parameters_dict[param_name] = value_text == "true"
             else:
-                parameters_dict[param_name] = int(value_text)
+                value_text = ""
+                value_start = len(int_list)
+                allow_decimal = param_type.type == "number"
+                for _ in range(10):
+                    logits = model.get_logits_from_input_ids(int_list)
+                    id_token_raw = numpy.argmax(logits)
+                    raw_token = id_to_token[int(id_token_raw)]
+                    raw_candidate = value_text + raw_token
+                    if is_valid_number_char(raw_candidate, allow_decimal):
+                        masked_logits = mask_logits_number(logits, id_to_token,
+                                                           value_text,
+                                                           allow_decimal)
+                        id_token = numpy.argmax(masked_logits)
+                        int_list.append(int(id_token))
+                        value_text = model.decode(int_list[value_start:])
+                    else:
+                        break
+                if allow_decimal:
+                    parameters_dict[param_name] = float(value_text)
+                else:
+                    parameters_dict[param_name] = int(value_text)
         forced_closing_ids = model.encode("}")[0].tolist()
         int_list.extend(forced_closing_ids)
         res_dict = {

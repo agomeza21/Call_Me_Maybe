@@ -31,8 +31,9 @@ def is_valid_prefix(candidate: str, valid_names: list[str]) -> bool:
     return False
 
 
-def mask_logits(logits: list[float], id_to_token: dict,
-                generated_text: str, valid_names: list[str]) -> list[float]:
+def mask_logits_names(logits: list[float], id_to_token: dict,
+                      generated_text: str,
+                      valid_names: list[str]) -> list[float]:
     modified_logits = []
     for id_token, logit in enumerate(logits):
         if id_token not in id_to_token:
@@ -76,6 +77,28 @@ def mask_logits_number(logits: list[float], id_to_token: dict,
             continue
         candidate = generated_text + id_to_token[id_token]
         if is_valid_number_char(candidate, allow_decimal):
+            modified_logits.append(logit)
+        else:
+            modified_logits.append(float("-inf"))
+    return modified_logits
+
+
+def is_valid_string(candidate: str) -> bool:
+    for char in candidate:
+        if char == '"':
+            return False
+    return True
+
+
+def mask_logits_string(logits: list[float], id_to_token: dict,
+                       generated_text: str) -> list[float]:
+    modified_logits = []
+    for id_token, logit in enumerate(logits):
+        if id_token not in id_to_token:
+            modified_logits.append(float("-inf"))
+            continue
+        candidate = generated_text + id_to_token[id_token]
+        if is_valid_string(candidate):
             modified_logits.append(logit)
         else:
             modified_logits.append(float("-inf"))

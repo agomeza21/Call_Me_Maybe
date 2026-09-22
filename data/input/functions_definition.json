@@ -4,14 +4,14 @@
     "description": "Add two numbers together and return their sum.",
     "parameters": {
       "a": {
-        "type": "integer"
+        "type": "number"
       },
       "b": {
-        "type": "integer"
+        "type": "number"
       }
     },
     "returns": {
-      "type": "integer"
+      "type": "number"
     }
   },
   {
@@ -66,6 +66,33 @@
     },
     "returns": {
       "type": "string"
+    }
+  },
+  {
+    "name": "fn_set_notifications",
+    "description": "Enable or disable notifications for a user.",
+    "parameters": {
+        "username": {
+        "type": "string"
+        },
+        "enabled": {
+        "type": "boolean"
+        }
+    },
+    "returns": {
+        "type": "boolean"
+    }
+  },
+  {
+    "name": "fn_is_even",
+    "description": "Check whether a number is even.",
+    "parameters": {
+        "n": {
+        "type": "integer"
+        }
+    },
+    "returns": {
+        "type": "boolean"
     }
   }
 ]
