@@ -1,7 +1,7 @@
 import argparse
 import sys
 from llm_sdk import Small_LLM_Model
-from call_me_maybe.file_utils import load_json_file
+from call_me_maybe.file_utils import load_json_file, save_json_file
 from call_me_maybe.generation import generate_function_calls
 from call_me_maybe.constrained_decoding import load_vocab
 from call_me_maybe.models import parse_functions, parse_tests
@@ -28,8 +28,7 @@ try:
     tests_parsed = parse_tests(tests)
     result = generate_function_calls(vocab, functions_parsed,
                                      tests_parsed, model)
+    save_json_file(args.output, result)
 except ValueError as e:
     print(e)
     sys.exit(1)
-
-print(result)

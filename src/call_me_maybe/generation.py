@@ -1,12 +1,13 @@
 import numpy
 import json
 from llm_sdk import Small_LLM_Model
-from .models import TestPrompt, FunctionDefinition
-from .constrained_decoding import (invert_vocab,
-                                   get_valid_function_names, mask_logits_names,
+from .models import TestPrompt, FunctionDefinition, FunctionCallResult
+from .constrained_decoding import (invert_vocab, get_valid_function_names,
                                    count_matching_prefixes,
-                                   mask_logits_number, is_valid_number_char,
-                                   is_valid_string, mask_logits_string)
+                                   is_valid_number_char,
+                                   is_valid_string, is_valid_prefix,
+                                   mask_logits)
+from functools import partial
 
 
 def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
@@ -15,7 +16,7 @@ def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
         functions_dict.append(f.model_dump())
     functions_text = json.dumps(functions_dict, indent=2)
     instructions = ("Given the following functions, respond with the name of "
-                    "the function to call and its parameters, in JSON format."
+                    "the function to call and its parameters, in JSON format. "
                     "Choose the function whose description best matches the "
                     "user's overall intent, not just individual words in the "
                     "prompt")
@@ -47,8 +48,9 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                 int_list.extend(forced_params_ids)
                 break
             logits = model.get_logits_from_input_ids(int_list)
-            masked_logits = mask_logits_names(logits, id_to_token,
-                                              generated_text, valid_names)
+            is_valid = partial(is_valid_prefix, valid_names=valid_names)
+            masked_logits = mask_logits(logits, id_to_token, generated_text,
+                                        is_valid)
             id_token = numpy.argmax(masked_logits)
             int_list.append(int(id_token))
         selected_function = None
@@ -76,8 +78,9 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                     raw_token = id_to_token[int(id_token_raw)]
                     raw_candidate = value_text + raw_token
                     if is_valid_string(raw_candidate):
-                        masked_logits = mask_logits_string(logits, id_to_token,
-                                                           value_text)
+                        masked_logits = mask_logits(logits, id_to_token,
+                                                    value_text,
+                                                    is_valid_string)
                         id_token = numpy.argmax(masked_logits)
                         int_list.append(int(id_token))
                         value_text = model.decode(int_list[value_start:])
@@ -97,9 +100,10 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                                                     boolean_values) == 1):
                         break
                     logits = model.get_logits_from_input_ids(int_list)
-                    masked_logits = mask_logits_names(logits, id_to_token,
-                                                      value_text,
-                                                      boolean_values)
+                    is_valid = partial(is_valid_prefix,
+                                       valid_names=boolean_values)
+                    masked_logits = mask_logits(logits, id_to_token,
+                                                value_text, is_valid)
                     id_token = numpy.argmax(masked_logits)
                     int_list.append(int(id_token))
                 parameters_dict[param_name] = value_text == "true"
@@ -113,9 +117,10 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                     raw_token = id_to_token[int(id_token_raw)]
                     raw_candidate = value_text + raw_token
                     if is_valid_number_char(raw_candidate, allow_decimal):
-                        masked_logits = mask_logits_number(logits, id_to_token,
-                                                           value_text,
-                                                           allow_decimal)
+                        is_valid = partial(is_valid_number_char,
+                                           allow_decimal=allow_decimal)
+                        masked_logits = mask_logits(logits, id_to_token,
+                                                    value_text, is_valid)
                         id_token = numpy.argmax(masked_logits)
                         int_list.append(int(id_token))
                         value_text = model.decode(int_list[value_start:])
@@ -127,10 +132,10 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                     parameters_dict[param_name] = int(value_text)
         forced_closing_ids = model.encode("}")[0].tolist()
         int_list.extend(forced_closing_ids)
-        res_dict = {
-            "prompt": test.prompt,
-            "name": function_name,
-            "parameters": parameters_dict
-        }
-        results.append(res_dict)
+        result = FunctionCallResult(
+            prompt=test.prompt,
+            name=function_name,
+            parameters=parameters_dict
+        )
+        results.append(result.model_dump())
     return results

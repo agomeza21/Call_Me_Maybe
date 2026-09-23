@@ -18,6 +18,12 @@ class TestPrompt(BaseModel):
     prompt: str
 
 
+class FunctionCallResult(BaseModel):
+    prompt: str
+    name: str
+    parameters: dict[str, str | int | float | bool]
+
+
 def parse_functions(functions: list[dict]) -> list[FunctionDefinition]:
     result = []
     for func in functions:
@@ -62,8 +68,8 @@ def format_tests_validation_error(e: pydantic.ValidationError,
     messages = []
     for error in e.errors():
         value = error["input"]
-        expected = error["ctx"]["expected"]
+        reason = error["msg"]
         error_msg = (f"Invalid type '{value}' in prompt '{prompt}':"
-                     f" expected one of {expected}")
+                     f" {reason}")
         messages.append(error_msg)
     return "\n".join(messages)

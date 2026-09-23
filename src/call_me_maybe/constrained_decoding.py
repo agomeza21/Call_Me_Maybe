@@ -1,4 +1,5 @@
 import json
+from typing import Callable
 from .models import FunctionDefinition
 
 
@@ -36,22 +37,6 @@ def is_valid_prefix(candidate: str, valid_names: list[str]) -> bool:
     return False
 
 
-def mask_logits_names(logits: list[float], id_to_token: dict,
-                      generated_text: str,
-                      valid_names: list[str]) -> list[float]:
-    modified_logits = []
-    for id_token, logit in enumerate(logits):
-        if id_token not in id_to_token:
-            modified_logits.append(float("-inf"))
-            continue
-        candidate = generated_text + id_to_token[id_token]
-        if is_valid_prefix(candidate, valid_names):
-            modified_logits.append(logit)
-        else:
-            modified_logits.append(float("-inf"))
-    return modified_logits
-
-
 def count_matching_prefixes(text: str, valid_names: list[str]) -> int:
     counter = 0
     for name in valid_names:
@@ -72,22 +57,6 @@ def is_valid_number_char(candidate: str, allow_decimal: bool) -> bool:
     return True
 
 
-def mask_logits_number(logits: list[float], id_to_token: dict,
-                       generated_text: str,
-                       allow_decimal: bool) -> list[float]:
-    modified_logits = []
-    for id_token, logit in enumerate(logits):
-        if id_token not in id_to_token:
-            modified_logits.append(float("-inf"))
-            continue
-        candidate = generated_text + id_to_token[id_token]
-        if is_valid_number_char(candidate, allow_decimal):
-            modified_logits.append(logit)
-        else:
-            modified_logits.append(float("-inf"))
-    return modified_logits
-
-
 def is_valid_string(candidate: str) -> bool:
     for char in candidate:
         if char == '"':
@@ -95,15 +64,15 @@ def is_valid_string(candidate: str) -> bool:
     return True
 
 
-def mask_logits_string(logits: list[float], id_to_token: dict,
-                       generated_text: str) -> list[float]:
+def mask_logits(logits: list[float], id_to_token: dict, generated_text: str,
+                is_valid: Callable[[str], bool]) -> list[float]:
     modified_logits = []
     for id_token, logit in enumerate(logits):
         if id_token not in id_to_token:
             modified_logits.append(float("-inf"))
             continue
         candidate = generated_text + id_to_token[id_token]
-        if is_valid_string(candidate):
+        if is_valid(candidate):
             modified_logits.append(logit)
         else:
             modified_logits.append(float("-inf"))
