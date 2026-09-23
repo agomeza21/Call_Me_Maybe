@@ -48,10 +48,11 @@ def format_functions_validation_error(e: pydantic.ValidationError,
                                       function_name: str) -> str:
     messages = []
     for error in e.errors():
+        param_name = error["loc"][0] if error["loc"] else "unknown"
         value = error["input"]
-        expected = error["ctx"]["expected"]
-        error_msg = (f"Invalid type '{value}' in function '{function_name}':"
-                     f" expected one of {expected}")
+        reason = error["msg"]
+        error_msg = (f"Invalid type '{value}' for parameter "
+                     f"'{param_name}' in function '{function_name}': {reason}")
         messages.append(error_msg)
     return "\n".join(messages)
 

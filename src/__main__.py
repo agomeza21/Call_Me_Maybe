@@ -1,6 +1,5 @@
 import argparse
 import sys
-import pydantic
 from llm_sdk import Small_LLM_Model
 from call_me_maybe.file_utils import load_json_file
 from call_me_maybe.generation import generate_function_calls
@@ -19,18 +18,18 @@ parser.add_argument("--output",
 args = parser.parse_args()
 
 model = Small_LLM_Model()
-
 vocab_path = model.get_path_to_vocab_file()
-vocab = load_vocab(vocab_path)
-
+result = []
 try:
+    vocab = load_vocab(vocab_path)
     functions = load_json_file(args.functions_definition)
     functions_parsed = parse_functions(functions)
     tests = load_json_file(args.input)
     tests_parsed = parse_tests(tests)
-except (FileNotFoundError, ValueError, pydantic.ValidationError) as e:
+    result = generate_function_calls(vocab, functions_parsed,
+                                     tests_parsed, model)
+except ValueError as e:
     print(e)
     sys.exit(1)
 
-result = generate_function_calls(vocab, functions_parsed, tests_parsed, model)
 print(result)
