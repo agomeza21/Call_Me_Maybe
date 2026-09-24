@@ -3,10 +3,10 @@ from typing import Callable
 from .models import FunctionDefinition
 
 
-def load_vocab(vocab_path: str) -> dict:
+def load_vocab(vocab_path: str) -> dict[str, int]:
     try:
         with open(vocab_path) as f:
-            vocab = json.load(f)
+            vocab: dict[str, int] = json.load(f)
     except FileNotFoundError as e:
         raise ValueError(f"File not found: {vocab_path}") from e
     except json.JSONDecodeError as e:
@@ -21,7 +21,7 @@ def get_valid_function_names(functions: list[FunctionDefinition]) -> list[str]:
     return functions_name
 
 
-def invert_vocab(vocab: dict) -> dict:
+def invert_vocab(vocab: dict[str, int]) -> dict[int, str]:
     id_to_token = {}
     for token, id in vocab.items():
         id_to_token[id] = token
@@ -64,7 +64,8 @@ def is_valid_string(candidate: str) -> bool:
     return True
 
 
-def mask_logits(logits: list[float], id_to_token: dict, generated_text: str,
+def mask_logits(logits: list[float], id_to_token: dict[int, str],
+                generated_text: str,
                 is_valid: Callable[[str], bool]) -> list[float]:
     modified_logits = []
     for id_token, logit in enumerate(logits):

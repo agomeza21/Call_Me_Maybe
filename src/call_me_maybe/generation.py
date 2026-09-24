@@ -1,13 +1,14 @@
 import numpy
 import json
+from typing import Any
 from llm_sdk import Small_LLM_Model
+from functools import partial
 from .models import TestPrompt, FunctionDefinition, FunctionCallResult
 from .constrained_decoding import (invert_vocab, get_valid_function_names,
                                    count_matching_prefixes,
                                    is_valid_number_char,
                                    is_valid_string, is_valid_prefix,
                                    mask_logits)
-from functools import partial
 
 
 def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
@@ -24,22 +25,23 @@ def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
     return result
 
 
-def build_error_result(prompt: str, warning: str) -> dict:
+def build_error_result(prompt: str, warning: str) -> dict[str, Any]:
     print(f"Warning: {warning}")
     result = FunctionCallResult(prompt=prompt, name="ERROR", parameters={})
     return result.model_dump()
 
 
-def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
+def generate_function_calls(vocab: dict[str, int],
+                            functions: list[FunctionDefinition],
                             tests: list[TestPrompt],
-                            model: Small_LLM_Model) -> list[dict]:
+                            model: Small_LLM_Model) -> list[dict[str, Any]]:
     results = []
     id_to_token = invert_vocab(vocab)
     valid_names = get_valid_function_names(functions)
     for test in tests:
         prompt = build_prompt(functions, test.prompt)
         ids = model.encode(prompt)
-        int_list: list = ids[0].tolist()
+        int_list: list[int] = ids[0].tolist()
         forced_names_ids = model.encode('{"name": "')[0].tolist()
         int_list.extend(forced_names_ids)
         prompt_length = len(int_list)
@@ -69,7 +71,7 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                                               f"determine a valid function for"
                                               f" prompt: {test.prompt}"))
             continue
-        parameters_dict = {}
+        parameters_dict: dict[str, str | int | float | bool] = {}
         generation_failed = False
         for index, (param_name, param_type) in (
                 enumerate(selected_function.parameters.items())):

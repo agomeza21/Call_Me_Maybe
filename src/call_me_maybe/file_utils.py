@@ -1,11 +1,12 @@
 import json
+from typing import Any
 import os
 
 
-def load_json_file(path: str) -> list[dict]:
+def load_json_file(path: str) -> list[dict[Any, Any]]:
     try:
         with open(path) as f:
-            data = json.load(f)
+            data: list[dict[Any, Any]] = json.load(f)
     except FileNotFoundError as e:
         raise ValueError(f"File not found: {path}") from e
     except json.JSONDecodeError as e:
@@ -13,7 +14,7 @@ def load_json_file(path: str) -> list[dict]:
     return data
 
 
-def save_json_file(path: str, data: list[dict]) -> None:
+def save_json_file(path: str, data: list[dict[str, Any]]) -> None:
     try:
         if os.path.dirname(path):
             os.makedirs(os.path.dirname(path), exist_ok=True)

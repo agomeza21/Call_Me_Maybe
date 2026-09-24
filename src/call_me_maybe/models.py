@@ -1,6 +1,6 @@
 import pydantic
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, Any
 
 
 class ParameterType(BaseModel):
@@ -24,7 +24,8 @@ class FunctionCallResult(BaseModel):
     parameters: dict[str, str | int | float | bool]
 
 
-def parse_functions(functions: list[dict]) -> list[FunctionDefinition]:
+def parse_functions(
+        functions: list[dict[str, Any]]) -> list[FunctionDefinition]:
     result = []
     for func in functions:
         try:
@@ -37,7 +38,7 @@ def parse_functions(functions: list[dict]) -> list[FunctionDefinition]:
     return result
 
 
-def parse_tests(tests: list[dict]) -> list[TestPrompt]:
+def parse_tests(tests: list[dict[str, Any]]) -> list[TestPrompt]:
     result = []
     for test in tests:
         try:
