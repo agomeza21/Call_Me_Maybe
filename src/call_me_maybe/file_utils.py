@@ -15,7 +15,8 @@ def load_json_file(path: str) -> list[dict]:
 
 def save_json_file(path: str, data: list[dict]) -> None:
     try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if os.path.dirname(path):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
             json.dump(data, f, indent=2)
     except OSError as e:

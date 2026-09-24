@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "agomez-a", email = "agomez-a@student.42urduliz.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "llm-sdk",
     "numpy>=2.5.3",

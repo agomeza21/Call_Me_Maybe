@@ -24,6 +24,12 @@ def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
     return result
 
 
+def build_error_result(prompt: str, warning: str) -> dict:
+    print(f"Warning: {warning}")
+    result = FunctionCallResult(prompt=prompt, name="ERROR", parameters={})
+    return result.model_dump()
+
+
 def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                             tests: list[TestPrompt],
                             model: Small_LLM_Model) -> list[dict]:
@@ -58,7 +64,13 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
             if func.name == function_name:
                 selected_function = func
                 break
+        if selected_function is None:
+            results.append(build_error_result(test.prompt, f"could not "
+                                              f"determine a valid function for"
+                                              f" prompt: {test.prompt}"))
+            continue
         parameters_dict = {}
+        generation_failed = False
         for index, (param_name, param_type) in (
                 enumerate(selected_function.parameters.items())):
             if index > 0:
@@ -75,6 +87,8 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                 for _ in range(20):
                     logits = model.get_logits_from_input_ids(int_list)
                     id_token_raw = numpy.argmax(logits)
+                    if int(id_token_raw) not in id_to_token:
+                        break
                     raw_token = id_to_token[int(id_token_raw)]
                     raw_candidate = value_text + raw_token
                     if is_valid_string(raw_candidate):
@@ -114,6 +128,8 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                 for _ in range(10):
                     logits = model.get_logits_from_input_ids(int_list)
                     id_token_raw = numpy.argmax(logits)
+                    if int(id_token_raw) not in id_to_token:
+                        break
                     raw_token = id_to_token[int(id_token_raw)]
                     raw_candidate = value_text + raw_token
                     if is_valid_number_char(raw_candidate, allow_decimal):
@@ -126,10 +142,19 @@ def generate_function_calls(vocab: dict, functions: list[FunctionDefinition],
                         value_text = model.decode(int_list[value_start:])
                     else:
                         break
+                if not value_text:
+                    generation_failed = True
+                    break
                 if allow_decimal:
                     parameters_dict[param_name] = float(value_text)
                 else:
                     parameters_dict[param_name] = int(value_text)
+        if generation_failed:
+            results.append(build_error_result(test.prompt, f"could not "
+                                              f"generate a valid value for"
+                                              f" parameter '{param_name}' in "
+                                              f"prompt: {test.prompt}"))
+            continue
         forced_closing_ids = model.encode("}")[0].tolist()
         int_list.extend(forced_closing_ids)
         result = FunctionCallResult(
