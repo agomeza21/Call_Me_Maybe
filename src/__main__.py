@@ -17,10 +17,10 @@ parser.add_argument("--output",
 
 args = parser.parse_args()
 
-model = Small_LLM_Model()
-vocab_path = model.get_path_to_vocab_file()
 result = []
 try:
+    model = Small_LLM_Model()
+    vocab_path = model.get_path_to_vocab_file()
     vocab = load_vocab(vocab_path)
     functions = load_json_file(args.functions_definition)
     functions_parsed = parse_functions(functions)
