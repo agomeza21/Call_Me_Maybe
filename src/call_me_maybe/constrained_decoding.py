@@ -58,10 +58,31 @@ def is_valid_number_char(candidate: str, allow_decimal: bool) -> bool:
 
 
 def is_valid_string(candidate: str) -> bool:
+    valid_escaped_chars = ['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']
+    escaped = False
     for char in candidate:
-        if char == '"':
-            return False
+        if escaped:
+            if char not in valid_escaped_chars:
+                return False
+            escaped = False
+        else:
+            if char == '\\':
+                escaped = True
+            elif char == '"':
+                return False
     return True
+
+
+def is_balanced(candidate: str) -> bool:
+    stack = []
+    pairs = {')': '(', ']': '[', '}': '{'}
+    for char in candidate:
+        if char in '([{':
+            stack.append(char)
+        elif char in ')]}':
+            if not stack or stack.pop() != pairs[char]:
+                return False
+    return len(stack) == 0
 
 
 def mask_logits(logits: list[float], id_to_token: dict[int, str],

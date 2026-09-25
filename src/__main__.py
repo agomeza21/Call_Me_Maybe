@@ -29,6 +29,6 @@ try:
     result = generate_function_calls(vocab, functions_parsed,
                                      tests_parsed, model)
     save_json_file(args.output, result)
-except ValueError as e:
-    print(e)
+except Exception as e:
+    print(f"Error: {e}")
     sys.exit(1)
