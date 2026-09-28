@@ -1,6 +1,6 @@
 import pydantic
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, Any
 
 
 class ParameterType(BaseModel):
@@ -24,9 +24,16 @@ class FunctionCallResult(BaseModel):
     parameters: dict[str, str | int | float | bool]
 
 
-def parse_functions(functions: list[dict]) -> list[FunctionDefinition]:
+def parse_functions(
+        functions: list[dict[str, Any]]) -> list[FunctionDefinition]:
+    if not isinstance(functions, list):
+        raise ValueError(
+            "functions_definition.json must contain a JSON array")
     result = []
     for func in functions:
+        if not isinstance(func, dict):
+            raise ValueError(
+                f"Each function must be a JSON object, got: {func}")
         try:
             function_def = FunctionDefinition.model_validate(func)
             result.append(function_def)
@@ -37,9 +44,15 @@ def parse_functions(functions: list[dict]) -> list[FunctionDefinition]:
     return result
 
 
-def parse_tests(tests: list[dict]) -> list[TestPrompt]:
+def parse_tests(tests: list[dict[str, Any]]) -> list[TestPrompt]:
+    if not isinstance(tests, list):
+        raise ValueError(
+            "functions_definition.json must contain a JSON array")
     result = []
     for test in tests:
+        if not isinstance(test, dict):
+            raise ValueError(
+                f"Each function must be a JSON object, got: {test}")
         try:
             test_def = TestPrompt.model_validate(test)
             result.append(test_def)

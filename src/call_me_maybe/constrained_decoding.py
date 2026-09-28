@@ -3,10 +3,10 @@ from typing import Callable
 from .models import FunctionDefinition
 
 
-def load_vocab(vocab_path: str) -> dict:
+def load_vocab(vocab_path: str) -> dict[str, int]:
     try:
         with open(vocab_path) as f:
-            vocab = json.load(f)
+            vocab: dict[str, int] = json.load(f)
     except FileNotFoundError as e:
         raise ValueError(f"File not found: {vocab_path}") from e
     except json.JSONDecodeError as e:
@@ -21,7 +21,7 @@ def get_valid_function_names(functions: list[FunctionDefinition]) -> list[str]:
     return functions_name
 
 
-def invert_vocab(vocab: dict) -> dict:
+def invert_vocab(vocab: dict[str, int]) -> dict[int, str]:
     id_to_token = {}
     for token, id in vocab.items():
         id_to_token[id] = token
@@ -58,13 +58,35 @@ def is_valid_number_char(candidate: str, allow_decimal: bool) -> bool:
 
 
 def is_valid_string(candidate: str) -> bool:
+    valid_escaped_chars = ['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']
+    escaped = False
     for char in candidate:
-        if char == '"':
-            return False
+        if escaped:
+            if char not in valid_escaped_chars:
+                return False
+            escaped = False
+        else:
+            if char == '\\':
+                escaped = True
+            elif char == '"':
+                return False
     return True
 
 
-def mask_logits(logits: list[float], id_to_token: dict, generated_text: str,
+def is_balanced(candidate: str) -> bool:
+    stack = []
+    pairs = {')': '(', ']': '[', '}': '{'}
+    for char in candidate:
+        if char in '([{':
+            stack.append(char)
+        elif char in ')]}':
+            if not stack or stack.pop() != pairs[char]:
+                return False
+    return len(stack) == 0
+
+
+def mask_logits(logits: list[float], id_to_token: dict[int, str],
+                generated_text: str,
                 is_valid: Callable[[str], bool]) -> list[float]:
     modified_logits = []
     for id_token, logit in enumerate(logits):
