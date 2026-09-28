@@ -20,9 +20,12 @@ def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
                     "the function to call and its parameters, in JSON format. "
                     "Choose the function whose description best matches the "
                     "user's overall intent, not just individual words in the "
-                    "prompt. The regex values must prioritize \\\\ over other "
-                    "escape chars")
-    result = f"{instructions}\n\n{functions_text}\n\n{prompt}"
+                    "prompt. Prioritize \\\\ over other escape chars.")
+    result = (
+        f"<|im_start|>system\n{instructions}\n\n{functions_text}<|im_end|>\n"
+        f"<|im_start|>user\n{prompt}<|im_end|>\n"
+        f"<|im_start|>assistant\n"
+    )
     return result
 
 
@@ -101,6 +104,14 @@ def generate_function_calls(vocab: dict[str, int],
                         should_stop = (not is_valid_string(raw_candidate) and
                                        is_balanced(value_text))
                         if should_stop:
+                            closing_quote_index = raw_token.rfind('"')
+                            leftover_content = raw_token[:closing_quote_index]
+                            if leftover_content:
+                                leftover_ids = (model.
+                                                encode(leftover_content)[0].
+                                                tolist())
+                                int_list.extend(leftover_ids)
+                                value_text = value_text + leftover_content
                             break
                         masked_logits = mask_logits(logits, id_to_token,
                                                     value_text,
