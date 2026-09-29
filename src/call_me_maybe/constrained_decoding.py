@@ -57,20 +57,22 @@ def is_valid_number_char(candidate: str, allow_decimal: bool) -> bool:
     return True
 
 
-def is_valid_string(candidate: str) -> bool:
+def is_valid_string(candidate: str) -> int:
     valid_escaped_chars = ['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']
     escaped = False
     for char in candidate:
         if escaped:
             if char not in valid_escaped_chars:
-                return False
+                return 0
             escaped = False
         else:
             if char == '\\':
                 escaped = True
             elif char == '"':
-                return False
-    return True
+                return 0
+    if escaped:
+        return 2
+    return 1
 
 
 def is_balanced(candidate: str) -> bool:
@@ -87,14 +89,16 @@ def is_balanced(candidate: str) -> bool:
 
 def mask_logits(logits: list[float], id_to_token: dict[int, str],
                 generated_text: str,
-                is_valid: Callable[[str], bool]) -> list[float]:
+                is_valid: Callable[[str], bool | int]) -> list[float]:
     modified_logits = []
     for id_token, logit in enumerate(logits):
         if id_token not in id_to_token:
             modified_logits.append(float("-inf"))
             continue
         candidate = generated_text + id_to_token[id_token]
-        if is_valid(candidate):
+        valid_result = is_valid(candidate)
+        if valid_result is True or (isinstance(valid_result, int)
+                                    and valid_result > 0):
             modified_logits.append(logit)
         else:
             modified_logits.append(float("-inf"))

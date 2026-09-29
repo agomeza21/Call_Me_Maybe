@@ -101,17 +101,24 @@ def generate_function_calls(vocab: dict[str, int],
                             break
                         raw_token = id_to_token[int(id_token_raw)]
                         raw_candidate = value_text + raw_token
-                        should_stop = (not is_valid_string(raw_candidate) and
-                                       is_balanced(value_text))
+
+                        is_closing_quote = False
+                        if '"' in raw_token:
+                            if not raw_token.endswith('\\"'):
+                                if not is_valid_string(raw_candidate):
+                                    is_closing_quote = True
+                        should_stop = False
+                        if is_closing_quote:
+                            if is_balanced(value_text):
+                                should_stop = True
                         if should_stop:
-                            closing_quote_index = raw_token.rfind('"')
-                            leftover_content = raw_token[:closing_quote_index]
-                            if leftover_content:
+                            content_before = raw_token.split('"')[0]
+                            if content_before:
                                 leftover_ids = (model.
-                                                encode(leftover_content)[0].
+                                                encode(content_before)[0].
                                                 tolist())
                                 int_list.extend(leftover_ids)
-                                value_text = value_text + leftover_content
+                                value_text = value_text + content_before
                             break
                         masked_logits = mask_logits(logits, id_to_token,
                                                     value_text,
