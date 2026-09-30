@@ -8,7 +8,7 @@ from .constrained_decoding import (invert_vocab, get_valid_function_names,
                                    count_matching_prefixes,
                                    is_valid_number_char,
                                    is_valid_string, is_valid_prefix,
-                                   mask_logits, is_balanced)
+                                   mask_logits)
 
 
 def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
@@ -94,37 +94,27 @@ def generate_function_calls(vocab: dict[str, int],
                     int_list.extend(forced_quotes_ids)
                     value_text = ""
                     value_start = len(int_list)
-                    for _ in range(20):
+                    for _ in range(50):
                         logits = model.get_logits_from_input_ids(int_list)
-                        id_token_raw = numpy.argmax(logits)
-                        if int(id_token_raw) not in id_to_token:
-                            break
-                        raw_token = id_to_token[int(id_token_raw)]
-                        raw_candidate = value_text + raw_token
-
-                        is_closing_quote = False
-                        if '"' in raw_token:
-                            if not raw_token.endswith('\\"'):
-                                if not is_valid_string(raw_candidate):
-                                    is_closing_quote = True
-                        should_stop = False
-                        if is_closing_quote:
-                            if is_balanced(value_text):
-                                should_stop = True
-                        if should_stop:
-                            content_before = raw_token.split('"')[0]
-                            if content_before:
-                                leftover_ids = (model.
-                                                encode(content_before)[0].
-                                                tolist())
-                                int_list.extend(leftover_ids)
-                                value_text = value_text + content_before
-                            break
                         masked_logits = mask_logits(logits, id_to_token,
                                                     value_text,
                                                     is_valid_string)
-                        id_token = numpy.argmax(masked_logits)
-                        int_list.append(int(id_token))
+                        id_token = int(numpy.argmax(masked_logits))
+                        raw_token = id_to_token.get(id_token, "")
+                        candidate = value_text + raw_token
+                        state = is_valid_string(candidate)
+                        if state == 4:
+                            quote_idx = raw_token.find('"')
+                            if quote_idx > 0:
+                                content_before = raw_token[:quote_idx]
+                                content_ids = (model.
+                                               encode(content_before)[0].
+                                               tolist())
+                                int_list.extend(content_ids)
+                                value_text = (model.
+                                              decode(int_list[value_start:]))
+                            break
+                        int_list.append(id_token)
                         value_text = model.decode(int_list[value_start:])
                     forced_quotes_ids = model.encode('"')[0].tolist()
                     int_list.extend(forced_quotes_ids)
