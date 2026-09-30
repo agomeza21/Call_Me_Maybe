@@ -1,0 +1,17 @@
+[
+  {
+    "prompt": "Replace all numbers in \"\"Hello 34 I'm 233 years \"old\"\" with NUMBERS"
+  },
+  {
+    "prompt": "Translate the following text to Spanish: \"The project was completely successful.\""
+  },
+  {
+    "prompt": "Format this text with line breaks: \"Line 1\\nLine 2\\tIndented\""
+  },
+  {
+    "prompt": "Extract the quote from: \"It's always impossible until it's done.\""
+  },
+  {
+    "prompt": "Clean the string: \"\\\"\\\"Word\\\"\\\"\""
+  }
+]
