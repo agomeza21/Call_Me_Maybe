@@ -1,10 +1,16 @@
 import json
+from typing import Callable
 from .models import FunctionDefinition
 
 
-def load_vocab(vocab_path: str) -> dict:
-    with open(vocab_path) as f:
-        vocab = json.load(f)
+def load_vocab(vocab_path: str) -> dict[str, int]:
+    try:
+        with open(vocab_path) as f:
+            vocab: dict[str, int] = json.load(f)
+    except FileNotFoundError as e:
+        raise ValueError(f"File not found: {vocab_path}") from e
+    except json.JSONDecodeError as e:
+        raise ValueError(f"In file {vocab_path}: {e}") from e
     return vocab
 
 
@@ -15,7 +21,7 @@ def get_valid_function_names(functions: list[FunctionDefinition]) -> list[str]:
     return functions_name
 
 
-def invert_vocab(vocab: dict) -> dict:
+def invert_vocab(vocab: dict[str, int]) -> dict[int, str]:
     id_to_token = {}
     for token, id in vocab.items():
         id_to_token[id] = token
@@ -31,21 +37,6 @@ def is_valid_prefix(candidate: str, valid_names: list[str]) -> bool:
     return False
 
 
-def mask_logits(logits: list[float], id_to_token: dict,
-                generated_text: str, valid_names: list[str]) -> list[float]:
-    modified_logits = []
-    for id_token, logit in enumerate(logits):
-        if id_token not in id_to_token:
-            modified_logits.append(float("-inf"))
-            continue
-        candidate = generated_text + id_to_token[id_token]
-        if is_valid_prefix(candidate, valid_names):
-            modified_logits.append(logit)
-        else:
-            modified_logits.append(float("-inf"))
-    return modified_logits
-
-
 def count_matching_prefixes(text: str, valid_names: list[str]) -> int:
     counter = 0
     for name in valid_names:
@@ -55,27 +46,80 @@ def count_matching_prefixes(text: str, valid_names: list[str]) -> int:
 
 
 def is_valid_number_char(candidate: str, allow_decimal: bool) -> bool:
-    if allow_decimal:
-        valid_chars = {
-            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "-"}
-    else:
-        valid_chars = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-"}
-    for char in candidate:
-        if char not in valid_chars:
+    if not candidate:
+        return True
+    has_decimal_point = False
+    for i, char in enumerate(candidate):
+        if char == '-':
+            if i != 0:
+                return False
+        elif char == '.':
+            if not allow_decimal:
+                return False
+            if has_decimal_point:
+                return False
+            has_decimal_point = True
+        elif not char.isdigit():
             return False
     return True
 
 
-def mask_logits_number(logits: list[float], id_to_token: dict,
-                       generated_text: str,
-                       allow_decimal: bool) -> list[float]:
+def is_valid_string(candidate: str) -> int:
+    # Estados:
+    # 0 = Inválido
+    # 1 = Válido (texto normal)
+    # 2 = Comilla o carácter escapado correctamente (\", \n, etc.)
+    # 3 = Pendiente de escape (termina en '\')
+    # 4 = Comilla de cierre de JSON alcanzada
+
+    valid_escaped_chars = ['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']
+    escaped = False
+    has_escaped_quote = False
+    for i, char in enumerate(candidate):
+        if escaped:
+            if char not in valid_escaped_chars:
+                return 0
+            if char == '"':
+                has_escaped_quote = True
+            escaped = False
+        else:
+            if char == '\\':
+                escaped = True
+            elif char == '"':
+                if i == len(candidate) - 1:
+                    return 4
+                else:
+                    return 0
+    if escaped:
+        return 3
+    if has_escaped_quote:
+        return 2
+    return 1
+
+
+def is_balanced(candidate: str) -> bool:
+    stack = []
+    pairs = {')': '(', ']': '[', '}': '{'}
+    for char in candidate:
+        if char in '([{':
+            stack.append(char)
+        elif char in ')]}':
+            if not stack or stack.pop() != pairs[char]:
+                return False
+    return len(stack) == 0
+
+
+def mask_logits(logits: list[float], id_to_token: dict[int, str],
+                generated_text: str,
+                is_valid: Callable[[str], int]) -> list[float]:
     modified_logits = []
     for id_token, logit in enumerate(logits):
         if id_token not in id_to_token:
             modified_logits.append(float("-inf"))
             continue
         candidate = generated_text + id_to_token[id_token]
-        if is_valid_number_char(candidate, allow_decimal):
+        valid_result = is_valid(candidate)
+        if valid_result > 0:
             modified_logits.append(logit)
         else:
             modified_logits.append(float("-inf"))

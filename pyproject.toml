@@ -6,12 +6,23 @@ readme = "README.md"
 authors = [
     { name = "agomez-a", email = "agomez-a@student.42urduliz.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "llm-sdk",
-    "numpy>=2.5.3",
+    "numpy>=1.24",
     "pydantic>=2.13.5",
 ]
+
+[dependency-groups]
+dev = [
+    "flake8",
+    "mypy",
+]
+
+[[tool.mypy.overrides]]
+module = "llm_sdk"
+ignore_missing_imports = true
+follow_imports = "skip"
 
 [project.scripts]
 call-me-maybe = "call_me_maybe:main"
