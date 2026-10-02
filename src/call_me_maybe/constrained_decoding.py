@@ -1,4 +1,5 @@
 import json
+import numpy
 from typing import Callable
 from .models import FunctionDefinition
 
@@ -97,16 +98,13 @@ def is_valid_string(candidate: str) -> int:
     return 1
 
 
-def is_balanced(candidate: str) -> bool:
-    stack = []
-    pairs = {')': '(', ']': '[', '}': '{'}
-    for char in candidate:
-        if char in '([{':
-            stack.append(char)
-        elif char in ')]}':
-            if not stack or stack.pop() != pairs[char]:
-                return False
-    return len(stack) == 0
+def select_valid_token(masked_logits: list[float]) -> int:
+    best_id = int(numpy.argmax(masked_logits))
+    if masked_logits[best_id] == float("-inf"):
+        raise ValueError(
+            "constrained decoding found no valid token to continue "
+            "generation")
+    return best_id
 
 
 def mask_logits(logits: list[float], id_to_token: dict[int, str],

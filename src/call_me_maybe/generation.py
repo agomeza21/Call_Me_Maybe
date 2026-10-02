@@ -8,7 +8,7 @@ from .constrained_decoding import (invert_vocab, get_valid_function_names,
                                    count_matching_prefixes,
                                    is_valid_number_char,
                                    is_valid_string, is_valid_prefix,
-                                   mask_logits)
+                                   mask_logits, select_valid_token)
 
 
 def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
@@ -65,7 +65,7 @@ def generate_function_calls(vocab: dict[str, int],
                 is_valid = partial(is_valid_prefix, valid_names=valid_names)
                 masked_logits = mask_logits(logits, id_to_token,
                                             generated_text, is_valid)
-                id_token = numpy.argmax(masked_logits)
+                id_token = select_valid_token(masked_logits)
                 int_list.append(int(id_token))
             selected_function = None
             for func in functions:
@@ -99,7 +99,7 @@ def generate_function_calls(vocab: dict[str, int],
                         masked_logits = mask_logits(logits, id_to_token,
                                                     value_text,
                                                     is_valid_string)
-                        id_token = int(numpy.argmax(masked_logits))
+                        id_token = int(select_valid_token(masked_logits))
                         raw_token = id_to_token.get(id_token, "")
                         candidate = value_text + raw_token
                         state = is_valid_string(candidate)
@@ -139,7 +139,7 @@ def generate_function_calls(vocab: dict[str, int],
                                            valid_names=boolean_values)
                         masked_logits = mask_logits(logits, id_to_token,
                                                     value_text, is_valid)
-                        id_token = numpy.argmax(masked_logits)
+                        id_token = select_valid_token(masked_logits)
                         int_list.append(int(id_token))
                     if value_text not in boolean_values:
                         generation_failed = True
@@ -161,7 +161,7 @@ def generate_function_calls(vocab: dict[str, int],
                                                allow_decimal=allow_decimal)
                             masked_logits = mask_logits(logits, id_to_token,
                                                         value_text, is_valid)
-                            id_token = numpy.argmax(masked_logits)
+                            id_token = select_valid_token(masked_logits)
                             int_list.append(int(id_token))
                             value_text = model.decode(int_list[value_start:])
                         else:
