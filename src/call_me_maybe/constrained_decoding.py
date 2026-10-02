@@ -26,8 +26,8 @@ def get_valid_function_names(functions: list[FunctionDefinition]) -> list[str]:
 
 def invert_vocab(vocab: dict[str, int]) -> dict[int, str]:
     id_to_token = {}
-    for token, id in vocab.items():
-        id_to_token[id] = token
+    for token_str, token_id in vocab.items():
+        id_to_token[token_id] = token_str
     return id_to_token
 
 
@@ -113,11 +113,11 @@ def mask_logits(logits: list[float], id_to_token: dict[int, str],
                 generated_text: str,
                 is_valid: Callable[[str], int]) -> list[float]:
     modified_logits = []
-    for id_token, logit in enumerate(logits):
-        if id_token not in id_to_token:
+    for candidate_id, logit in enumerate(logits):
+        if candidate_id not in id_to_token:
             modified_logits.append(float("-inf"))
             continue
-        candidate = generated_text + id_to_token[id_token]
+        candidate = generated_text + id_to_token[candidate_id]
         valid_result = is_valid(candidate)
         if valid_result > 0:
             modified_logits.append(logit)
