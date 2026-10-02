@@ -31,17 +31,5 @@
   },
   {
     "prompt": "Substitute the word 'cat' with 'dog' in 'The cat sat on the mat with another cat'"
-  },
-  {
-    "prompt": "Enable notifications for maria"
-  },
-  {
-    "prompt": "Turn off notifications for john"
-  },
-  {
-    "prompt": "Is 8 an even number?"
-  },
-  {
-    "prompt": "Check if 7 is even"
   }
 ]
