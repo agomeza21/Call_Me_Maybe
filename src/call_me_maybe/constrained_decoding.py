@@ -10,6 +10,8 @@ def load_vocab(vocab_path: str) -> dict[str, int]:
             vocab: dict[str, int] = json.load(f)
     except FileNotFoundError as e:
         raise ValueError(f"File not found: {vocab_path}") from e
+    except OSError as e:
+        raise ValueError(f"Cannot read file {vocab_path}: {e}") from e
     except json.JSONDecodeError as e:
         raise ValueError(f"In file {vocab_path}: {e}") from e
     return vocab

@@ -1,5 +1,6 @@
 import numpy
 import json
+import sys
 from typing import Any
 from llm_sdk import Small_LLM_Model
 from functools import partial
@@ -30,7 +31,7 @@ def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
 
 
 def build_error_result(prompt: str, warning: str) -> dict[str, Any]:
-    print(f"Warning: {warning}")
+    print(f"Warning: {warning}", file=sys.stderr)
     result = FunctionCallResult(prompt=prompt, name="ERROR", parameters={})
     return result.model_dump()
 
@@ -42,8 +43,16 @@ def generate_function_calls(vocab: dict[str, int],
     results = []
     id_to_token = invert_vocab(vocab)
     valid_names = get_valid_function_names(functions)
+    max_func_name = 200
+    max_string = 200
+    max_number = 40
+    max_boolean = 20
     for test in tests:
         try:
+            if not test.prompt.strip():
+                results.append(build_error_result(test.prompt,
+                                                  "prompt is empty or blank"))
+                continue
             prompt = build_prompt(functions, test.prompt)
             ids = model.encode(prompt)
             int_list: list[int] = ids[0].tolist()
@@ -51,7 +60,7 @@ def generate_function_calls(vocab: dict[str, int],
             int_list.extend(forced_names_ids)
             prompt_length = len(int_list)
             function_name = ""
-            for _ in range(50):
+            for _ in range(max_func_name):
                 generated_text = model.decode(int_list[prompt_length:])
                 if (generated_text in valid_names and
                         count_matching_prefixes(generated_text,
@@ -94,7 +103,7 @@ def generate_function_calls(vocab: dict[str, int],
                     int_list.extend(forced_quotes_ids)
                     value_text = ""
                     value_start = len(int_list)
-                    for _ in range(50):
+                    for _ in range(max_string):
                         logits = model.get_logits_from_input_ids(int_list)
                         masked_logits = mask_logits(logits, id_to_token,
                                                     value_text,
@@ -128,7 +137,7 @@ def generate_function_calls(vocab: dict[str, int],
                     boolean_values = ["true", "false"]
                     value_text = ""
                     value_start = len(int_list)
-                    for _ in range(20):
+                    for _ in range(max_boolean):
                         value_text = model.decode(int_list[value_start:])
                         if (value_text in boolean_values and
                                 count_matching_prefixes(value_text,
@@ -149,7 +158,7 @@ def generate_function_calls(vocab: dict[str, int],
                     value_text = ""
                     value_start = len(int_list)
                     allow_decimal = param_type.type == "number"
-                    for _ in range(10):
+                    for _ in range(max_number):
                         logits = model.get_logits_from_input_ids(int_list)
                         id_token_raw = numpy.argmax(logits)
                         if int(id_token_raw) not in id_to_token:

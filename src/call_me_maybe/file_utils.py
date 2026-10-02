@@ -9,6 +9,8 @@ def load_json_file(path: str) -> list[dict[Any, Any]]:
             data: list[dict[Any, Any]] = json.load(f)
     except FileNotFoundError as e:
         raise ValueError(f"File not found: {path}") from e
+    except OSError as e:
+        raise ValueError(f"Cannot read file {path}: {e}") from e
     except json.JSONDecodeError as e:
         raise ValueError(f"In file {path}: {e}") from e
     return data

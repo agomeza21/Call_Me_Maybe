@@ -18,15 +18,16 @@ parser.add_argument("--output",
 
 args = parser.parse_args()
 
-result = []
 try:
     functions = load_json_file(args.functions_definition)
     functions_parsed = parse_functions(functions)
     tests = load_json_file(args.input)
     tests_parsed = parse_tests(tests)
-
-    model = Small_LLM_Model()
-    vocab_path = model.get_path_to_vocab_file()
+    try:
+        model = Small_LLM_Model()
+        vocab_path = model.get_path_to_vocab_file()
+    except Exception as e:
+        raise ValueError(f"Could not load the model: {e}") from e
     vocab = load_vocab(vocab_path)
 
     start_time = time.time()
@@ -37,5 +38,5 @@ try:
 
     save_json_file(args.output, result)
 except Exception as e:
-    print(f"Error: {e}")
+    print(f"Error: {e}", file=sys.stderr)
     sys.exit(1)
