@@ -209,7 +209,7 @@ def _process_single_test(test: TestPrompt, functions: list[FunctionDefinition],
             enumerate(selected_function.parameters.items())):
         if index > 0:
             _append_tokens(model, token_ids, ", ")
-        _append_tokens(model, token_ids, f'"{param_name}": ')
+        _append_tokens(model, token_ids, f'"{param_name}":')
 
         parsed_value: str | int | float | bool | None = None
         if param_type.type == "string":

@@ -49,6 +49,8 @@ def count_matching_prefixes(text: str, valid_names: list[str]) -> int:
 
 
 def is_valid_number_char(candidate: str, allow_decimal: bool) -> bool:
+    if candidate.startswith('Ġ') or candidate.startswith(' '):
+        candidate = candidate[1:]
     if not candidate:
         return True
     has_decimal_point = False
