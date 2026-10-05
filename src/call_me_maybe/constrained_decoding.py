@@ -49,6 +49,8 @@ def count_matching_prefixes(text: str, valid_names: list[str]) -> int:
 
 
 def is_valid_number_char(candidate: str, allow_decimal: bool) -> bool:
+    if candidate.startswith('Ġ') or candidate.startswith(' '):
+        candidate = candidate[1:]
     if not candidate:
         return True
     has_decimal_point = False
@@ -78,7 +80,7 @@ def is_valid_string(candidate: str) -> int:
     valid_escaped_chars = ['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']
     escaped = False
     has_escaped_quote = False
-    for i, char in enumerate(candidate):
+    for char in candidate:
         if escaped:
             if char not in valid_escaped_chars:
                 return 0
@@ -89,10 +91,7 @@ def is_valid_string(candidate: str) -> int:
             if char == '\\':
                 escaped = True
             elif char == '"':
-                if i == len(candidate) - 1:
-                    return 4
-                else:
-                    return 0
+                return 4
     if escaped:
         return 3
     if has_escaped_quote:
