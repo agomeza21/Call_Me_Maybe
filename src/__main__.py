@@ -1,3 +1,23 @@
+"""Command line entry point: uv run python -m src [ARGS="options"].
+
+Reads the function definitions and the test prompts, loads the model
+and its vocabulary, generates one function call per prompt with
+constrained decoding and writes the results as JSON.
+
+Options (all optional):
+    --functions_definition: JSON file with the available functions
+        (default: data/input/functions_definition.json).
+    --input: JSON file with the prompts
+        (default: data/input/function_calling_tests.json).
+    --output: JSON file to write
+        (default: data/output/function_calling_results.json).
+
+An error loading the files, loading the model or saving the output
+prints "Error: ..." to stderr and exits with status 1. A failure in
+a single prompt does not stop the run: that prompt gets an ERROR
+entry.
+"""
+
 import argparse
 import sys
 import time
