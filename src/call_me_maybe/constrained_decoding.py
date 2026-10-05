@@ -78,7 +78,7 @@ def is_valid_string(candidate: str) -> int:
     valid_escaped_chars = ['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']
     escaped = False
     has_escaped_quote = False
-    for i, char in enumerate(candidate):
+    for char in candidate:
         if escaped:
             if char not in valid_escaped_chars:
                 return 0
@@ -89,10 +89,7 @@ def is_valid_string(candidate: str) -> int:
             if char == '\\':
                 escaped = True
             elif char == '"':
-                if i == len(candidate) - 1:
-                    return 4
-                else:
-                    return 0
+                return 4
     if escaped:
         return 3
     if has_escaped_quote:

@@ -64,6 +64,18 @@ def _generate_function_name(model: Small_LLM_Model, token_ids: list[int],
     return ""
 
 
+def _text_before_closing_quote(text: str) -> str:
+    escaped = False
+    for i, char in enumerate(text):
+        if escaped:
+            escaped = False
+        elif char == '\\':
+            escaped = True
+        elif char == '"':
+            return text[:i]
+    return text
+
+
 def _generate_string_param(model: Small_LLM_Model, token_ids: list[int],
                            id_to_token: dict[int, str]) -> str | None:
     max_string_tokens = 200
@@ -81,9 +93,9 @@ def _generate_string_param(model: Small_LLM_Model, token_ids: list[int],
         state = is_valid_string(candidate)
 
         if state == 4:
-            quote_idx = raw_token.find('"')
-            if quote_idx > 0:
-                content_before = raw_token[:quote_idx]
+            token_text = model.decode([id_token])
+            content_before = _text_before_closing_quote(token_text)
+            if content_before:
                 _append_tokens(model, token_ids, content_before)
                 value_text = model.decode(token_ids[value_start:])
             break
@@ -128,7 +140,7 @@ def _generate_boolean_param(model: Small_LLM_Model, token_ids: list[int],
 def _generate_number_param(model: Small_LLM_Model, token_ids: list[int],
                            id_to_token: dict[int, str],
                            param_type_name: str) -> int | float | None:
-    max_number_tokens = 40
+    max_number_tokens = 20
     value_text = ""
     value_start = len(token_ids)
     allow_decimal = param_type_name == "number"
