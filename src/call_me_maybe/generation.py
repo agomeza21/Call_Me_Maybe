@@ -146,6 +146,10 @@ def _generate_number_param(model: Small_LLM_Model, token_ids: list[int],
     allow_decimal = param_type_name == "number"
     for _ in range(max_number_tokens):
         logits = model.get_logits_from_input_ids(token_ids)
+        has_digit = False
+        for char in value_text:
+            if char.isdigit():
+                has_digit = True
         id_token_raw = numpy.argmax(logits)
         if int(id_token_raw) not in id_to_token:
             break
@@ -153,7 +157,7 @@ def _generate_number_param(model: Small_LLM_Model, token_ids: list[int],
         raw_token = id_to_token[int(id_token_raw)]
         raw_candidate = value_text + raw_token
 
-        if is_valid_number_char(raw_candidate, allow_decimal):
+        if is_valid_number_char(raw_candidate, allow_decimal) or not has_digit:
             is_valid = partial(is_valid_number_char,
                                allow_decimal=allow_decimal)
             masked_logits = mask_logits(logits, id_to_token,
@@ -209,7 +213,10 @@ def _process_single_test(test: TestPrompt, functions: list[FunctionDefinition],
             enumerate(selected_function.parameters.items())):
         if index > 0:
             _append_tokens(model, token_ids, ", ")
-        _append_tokens(model, token_ids, f'"{param_name}":')
+        if param_type.type in ("number", "integer"):
+            _append_tokens(model, token_ids, f'"{param_name}":')
+        else:
+            _append_tokens(model, token_ids, f'"{param_name}": ')
 
         parsed_value: str | int | float | bool | None = None
         if param_type.type == "string":
