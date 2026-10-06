@@ -55,7 +55,7 @@ class FunctionDefinition(BaseModel):
         for param_name in v.keys():
             if len(param_name) > 20:
                 raise ValueError(
-                    f"Parameter name '{param_name[:30]}...' is too long. "
+                    f"Parameter name '{param_name[:20]}...' is too long. "
                     f"Max 20 characters.")
         return v
 

@@ -331,8 +331,8 @@ expensive values.
   addition, products and square roots, greetings, string reversal, regular
   expression substitution, a boolean function, SQL queries, reading files,
   Windows paths with backslashes, templates with quotes and braces, a very
-  large decimal number, negative numbers (including `--5`) and functions
-  whose names are a prefix of another (`fn_add` / `fn_add_numbers`).
+  large decimal number, negative numbers and functions whose names are a
+  prefix of another (`fn_add` / `fn_add_numbers`).
 - Edge cases from the subject: empty prompts, special characters, large
   numbers and ambiguous prompts.
 - Static checks: `make lint` and `make lint-strict` (flake8 and mypy).
